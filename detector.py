@@ -134,6 +134,7 @@ def remove_background_noise(colored_board):
 
     return red_result, blue_result, green_result
 
+
 def detect_circle(board_image):
     """
     1. input screenshot of a board.
