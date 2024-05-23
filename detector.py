@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2 as cv
 import os
+import pytesseract
+from PIL import Image
+import re
 
 def click_event(event, x, y, flags, param):
     """
@@ -12,7 +15,7 @@ def click_event(event, x, y, flags, param):
 
 
 def mouse_callback(name, img):
-    cv.namedWindow(name)
+    cv.namedWindow(name)  
     cv.setMouseCallback(name, click_event)
     # Display the image
     cv.imshow(name, img)
@@ -178,7 +181,25 @@ def detect_text(text_image):
     a = detect_text(text_image)
     a = ["Three combination", "V8"]
     """
-    return None
+    ocr_result = pytesseract.image_to_string(img)
+    lines = ocr_result.split("\n")
+    first_two_lines = lines[:2]
+
+    cleaned_lines = []
+    for i,line in enumerate(first_two_lines):
+        if i ==0:
+            cleaned_line = re.sub(r'^[^a-zA-Z]+', '', line)  # Remove leading non-alphabetic characters
+            cleaned_line = re.sub(r'[^a-zA-Z]+$', '', cleaned_line)  # Remove trailing non-alphabetic characters
+            cleaned_line = cleaned_line.strip()  # Remove leading and trailing whitespace
+            
+        if i ==1:
+            match = re.search(r'\b[3-9][A-C]\+/V\d\b', line)
+            cleaned_line = match.group(0) if match else ''
+        cleaned_lines.append(cleaned_line)
+
+
+
+    return cleaned_lines
 
 
 def map_coordinates(board_coordinate):
@@ -198,15 +219,15 @@ def map_coordinates(board_coordinate):
     return None
 
 if __name__ == "__main__":
-    path = "/Users/patrickdharma/Desktop/programming/openCV/moonboard_DatasetProject/Resources/Photos/moonboard.PNG"
+    path = "/Users/wybeeboi/Documents/moonboard generator/board_dataset_generator/Resources/Photos/moonboard.PNG"
     img = read_image(path)
     colored_board, colored_text = crop_img(img)
     red_masked, blue_masked, green_masked =  remove_background_noise(colored_board)
+    print(detect_text(colored_text))
     # blur each masks
     red_blurred = blur_image(red_masked)
     blue_blurred = blur_image(blue_masked)
     green_blurred = blur_image(green_masked)
-    
 
     detect_red = detect_circle(red_blurred)
     detect_blue = detect_circle(blue_blurred)
