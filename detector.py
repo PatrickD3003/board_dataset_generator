@@ -30,7 +30,7 @@ def crop_img(img):
     [row_start:row_end, col_start:col_end]
     """
     board_part = img[600:2332, 26:1124] 
-    text_part = img[328:514, 291:889]
+    text_part = img[313:561, 13:1155]
     return board_part, text_part
 
 
