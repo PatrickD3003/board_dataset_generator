@@ -182,9 +182,10 @@ def detect_text(text_image):
     a = ["Three combination", "V8"]
     """
     ocr_result = pytesseract.image_to_string(img)
+    print(ocr_result)
     lines = ocr_result.split("\n")
-    first_two_lines = lines[:2]
-
+    first_two_lines = lines[:3]
+    first_two_lines = [line for line in first_two_lines if line != '']
     cleaned_lines = []
     for i,line in enumerate(first_two_lines):
         if i ==0:
@@ -193,10 +194,10 @@ def detect_text(text_image):
             cleaned_line = cleaned_line.strip()  # Remove leading and trailing whitespace
             
         if i ==1:
-            match = re.search(r'\b[3-9][A-C]\+/V\d\b', line)
+            match = re.search(r'\b[3-9][A-C]\+?/V\d\b', line)
             cleaned_line = match.group(0) if match else ''
         cleaned_lines.append(cleaned_line)
-
+    print(first_two_lines)
 
 
     return cleaned_lines
@@ -219,7 +220,7 @@ def map_coordinates(board_coordinate):
     return None
 
 if __name__ == "__main__":
-    path = "/Users/wybeeboi/Documents/moonboard generator/board_dataset_generator/Resources/Photos/moonboard.PNG"
+    path = "/Resources/Photos/moonboard1.PNG"
     img = read_image(path)
     colored_board, colored_text = crop_img(img)
     red_masked, blue_masked, green_masked =  remove_background_noise(colored_board)
@@ -228,11 +229,9 @@ if __name__ == "__main__":
     red_blurred = blur_image(red_masked)
     blue_blurred = blur_image(blue_masked)
     green_blurred = blur_image(green_masked)
-
     detect_red = detect_circle(red_blurred)
     detect_blue = detect_circle(blue_blurred)
     detect_green = detect_circle(green_blurred)
-    
     # call the mouse_callback function with the cropped image part
     # mouse_callback("measurer", board_part)
 
