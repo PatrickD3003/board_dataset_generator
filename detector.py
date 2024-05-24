@@ -124,9 +124,9 @@ def remove_background_noise(colored_board):
     green_result = cv.bitwise_and(colored_board, colored_board, mask= green_mask)
 
     # display the mask and masked image
-    # cv.imshow('Mask', green_mask)
+    # cv.imshow('Mask', blue_mask)
     # cv.waitKey(0)
-    # cv.imshow('Masked Image', green_result)
+    # cv.imshow('Masked Image', blue_result)
     # cv.waitKey(0)
     # cv.imshow('colored_board', colored_board)
     # cv.waitKey(0)
@@ -150,6 +150,8 @@ def detect_circle(board_image):
     detected_circles = cv.HoughCircles(board_image, 
                                        cv.HOUGH_GRADIENT, 1, 20, param1 = 50,
                                        param2 = 30, minRadius = 50, maxRadius = 100)
+
+    detected_coordinates = []
     
     if detected_circles is not None:
         # convert the circle parameters a, b, and r to integers.
@@ -157,16 +159,19 @@ def detect_circle(board_image):
 
         for pt in detected_circles[0, :]:
             a, b, r = pt[0], pt[1], pt[2]
-            # Draw the circumference of the circle
-            # syntax : 
-            # cv2.circle(image, center_coordinates, radius, color, thickness)
-            cv.circle(board_image, (a, b), r, (255, 0, 0), 2)
-            # Draw a small circle (of radius 1) to show the center.
-            cv.circle(board_image, (a, b), 1, (255, 0, 0), 3)
-            print(a, b, r)
-            cv.imshow("Detected Circle", board_image)
-            cv.waitKey(0)
-            cv.destroyAllWindows()
+            detected_coordinates.append([a, b])
+            # # Draw the circumference of the circle
+            # # syntax : 
+            # # cv2.circle(image, center_coordinates, radius, color, thickness)
+            # cv.circle(board_image, (a, b), r, (255, 0, 0), 2)
+            # # Draw a small circle (of radius 1) to show the center.
+            # cv.circle(board_image, (a, b), 1, (255, 0, 0), 3)
+            # print(a, b, r)
+            # cv.imshow("Detected Circle", board_image)
+            # cv.waitKey(0)
+            # cv.destroyAllWindows()
+
+    return detected_coordinates
 
 
 def detect_text(text_image):
@@ -205,12 +210,15 @@ if __name__ == "__main__":
     # blur each masks
     red_blurred = blur_image(red_masked)
     blue_blurred = blur_image(blue_masked)
-    green_blurred = blur_image(green_masked)
-    
+    green_blurred = blur_image(green_masked)    
 
     detect_red = detect_circle(red_blurred)
     detect_blue = detect_circle(blue_blurred)
     detect_green = detect_circle(green_blurred)
+
+    print(detect_red)
+    print(detect_blue)
+    print(detect_green)
     
     # call the mouse_callback function with the cropped image part
     # mouse_callback("measurer", board_part)
