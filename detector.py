@@ -97,7 +97,8 @@ def remove_background_noise(colored_board):
     hsv = cv.cvtColor(colored_board, cv.COLOR_BGR2HSV)
 
     # HSV value for moonboard red #f44336
-    hsv_red = hex_to_hsv("#f44336")
+    # hsv_red = hex_to_hsv("#f44336")
+    hsv_red = np.array([171, 167, 235])
     # HSV value for moonboard blue #2961fe
     hsv_blue = hex_to_hsv("#2961fe")
     # HSV value for moonboard green #00c852
@@ -163,16 +164,16 @@ def detect_circle(board_image):
         for pt in detected_circles[0, :]:
             a, b, r = pt[0], pt[1], pt[2]
             detected_coordinates.append([a, b])
-            # # Draw the circumference of the circle
-            # # syntax : 
-            # # cv2.circle(image, center_coordinates, radius, color, thickness)
-            # cv.circle(board_image, (a, b), r, (255, 0, 0), 2)
-            # # Draw a small circle (of radius 1) to show the center.
-            # cv.circle(board_image, (a, b), 1, (255, 0, 0), 3)
-            # print(a, b, r)
-            # cv.imshow("Detected Circle", board_image)
-            # cv.waitKey(0)
-            # cv.destroyAllWindows()
+            # Draw the circumference of the circle
+            # syntax : 
+            # cv2.circle(image, center_coordinates, radius, color, thickness)
+            cv.circle(board_image, (a, b), r, (255, 0, 0), 2)
+            # Draw a small circle (of radius 1) to show the center.
+            cv.circle(board_image, (a, b), 1, (255, 0, 0), 3)
+            print(a, b, r)
+            cv.imshow("Detected Circle", board_image)
+            cv.waitKey(0)
+            cv.destroyAllWindows()
 
     return detected_coordinates
 
@@ -187,7 +188,7 @@ def detect_text(text_image):
     a = ["Three combination", "V8"]
     """
     ocr_result = pytesseract.image_to_string(img)
-    print(ocr_result)
+    # print(ocr_result)
     lines = ocr_result.split("\n")
     first_two_lines = lines[:3]
     first_two_lines = [line for line in first_two_lines if line != '']
@@ -202,7 +203,7 @@ def detect_text(text_image):
             match = re.search(r'\b[3-9][A-C]\+?/V\d\b', line)
             cleaned_line = match.group(0) if match else ''
         cleaned_lines.append(cleaned_line)
-    print(first_two_lines)
+    # print(first_two_lines)
 
 
     return cleaned_lines
@@ -222,14 +223,15 @@ def map_coordinates(board_coordinate):
     {start : True, goal : False, holds: A4}
     }
     """
+    
     return None
 
 if __name__ == "__main__":
-    path = "/Users/wybeeboi/Documents/moonboard generator 2 /board_dataset_generator/Resources/Photos/moonboard.PNG"
+    path = "/Users/patrickdharma/Desktop/programming/openCV/moonboard_DatasetProject/Resources/Photos/all.PNG"
     img = read_image(path)
     colored_board, colored_text = crop_img(img)
     red_masked, blue_masked, green_masked =  remove_background_noise(colored_board)
-    print(detect_text(colored_text))
+    
     # blur each masks
     red_blurred = blur_image(red_masked)
     blue_blurred = blur_image(blue_masked)
@@ -238,10 +240,13 @@ if __name__ == "__main__":
     detect_red = detect_circle(red_blurred)
     detect_blue = detect_circle(blue_blurred)
     detect_green = detect_circle(green_blurred)
+    # detect the boulder's name and its grade, return a list
+    detect_text = detect_text(colored_text)
 
     print(detect_red)
     print(detect_blue)
     print(detect_green)
+    print(detect_text)
     
     # call the mouse_callback function with the cropped image part
     # mouse_callback("measurer", board_part)
