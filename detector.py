@@ -34,6 +34,8 @@ def crop_img(img):
     """
     board_part = img[600:2332, 26:1124] 
     text_part = img[313:561, 13:1155]
+    # cv.imshow('text', text_part)
+    # cv.waitKey(0)
     return board_part, text_part
 
 
@@ -97,8 +99,8 @@ def remove_background_noise(colored_board):
     hsv = cv.cvtColor(colored_board, cv.COLOR_BGR2HSV)
 
     # HSV value for moonboard red #f44336
-    # hsv_red = hex_to_hsv("#f44336")
-    hsv_red = np.array([171, 167, 235])
+    hsv_red = hex_to_hsv("#f44336")
+    # hsv_red = np.array([171, 167, 235])  # different kind of red, used in "hold filter" mode in MB app
     # HSV value for moonboard blue #2961fe
     hsv_blue = hex_to_hsv("#2961fe")
     # HSV value for moonboard green #00c852
@@ -127,10 +129,10 @@ def remove_background_noise(colored_board):
     blue_result = cv.bitwise_and(colored_board, colored_board, mask= blue_mask)
     green_result = cv.bitwise_and(colored_board, colored_board, mask= green_mask)
 
-    # display the mask and masked image
-    # cv.imshow('Mask', blue_mask)
+    # # display the mask and masked image
+    # cv.imshow('Mask', red_mask)
     # cv.waitKey(0)
-    # cv.imshow('Masked Image', blue_result)
+    # cv.imshow('Masked Image', red_result)
     # cv.waitKey(0)
     # cv.imshow('colored_board', colored_board)
     # cv.waitKey(0)
@@ -164,16 +166,18 @@ def detect_circle(board_image):
         for pt in detected_circles[0, :]:
             a, b, r = pt[0], pt[1], pt[2]
             detected_coordinates.append([a, b])
-            # Draw the circumference of the circle
-            # syntax : 
-            # cv2.circle(image, center_coordinates, radius, color, thickness)
-            cv.circle(board_image, (a, b), r, (255, 0, 0), 2)
-            # Draw a small circle (of radius 1) to show the center.
-            cv.circle(board_image, (a, b), 1, (255, 0, 0), 3)
-            print(a, b, r)
-            cv.imshow("Detected Circle", board_image)
-            cv.waitKey(0)
-            cv.destroyAllWindows()
+
+
+            # # Draw the circumference of the circle
+            # # syntax : 
+            # # cv2.circle(image, center_coordinates, radius, color, thickness)
+            # cv.circle(board_image, (a, b), r, (255, 0, 0), 2)
+            # # Draw a small circle (of radius 1) to show the center.
+            # cv.circle(board_image, (a, b), 1, (255, 0, 0), 3)
+            # print(a, b, r)
+            # cv.imshow("Detected Circle", board_image)
+            # cv.waitKey(0)
+            # cv.destroyAllWindows()
 
     return detected_coordinates
 
@@ -187,7 +191,7 @@ def detect_text(text_image):
     a = detect_text(text_image)
     a = ["Three combination", "V8"]
     """
-    ocr_result = pytesseract.image_to_string(img)
+    ocr_result = pytesseract.image_to_string(text_image)
     # print(ocr_result)
     lines = ocr_result.split("\n")
     first_two_lines = lines[:3]
@@ -209,7 +213,7 @@ def detect_text(text_image):
     return cleaned_lines
 
 
-def map_coordinates(board_coordinate):
+def map_coordinates(coordinates, color):
     """
     1. input coordinate data from detect_circle()
     2. predict the type of holds based on the coordinate.
@@ -223,31 +227,81 @@ def map_coordinates(board_coordinate):
     {start : True, goal : False, holds: A4}
     }
     """
-    
-    return None
+    # define the labels.
+    hold_labels_column = list("ABCDEFGHIJK")
+    hold_labels_row = [i for i in range(18, 0, -1)]
+    # a list containing all the labels detected from the coordinates
+    hold_labels = []
+    # pick sample hold's coordination
+    # (column, row)
+    A18_coordinate = (142, 128)
+    B18_coordinate = (232, 128)
+    A17_coordinate = (142, 218)
+    # count the distance between holds, both the column and row
+    column_distance = B18_coordinate[0] - A18_coordinate[0]
+    row_distance = A17_coordinate[1] - A18_coordinate[1]
 
-if __name__ == "__main__":
-    path = "/Users/patrickdharma/Desktop/programming/openCV/moonboard_DatasetProject/Resources/Photos/all.PNG"
+    for coordinate in coordinates:
+        column_label = ""
+        row_label = ""
+        # check column
+        i = 0
+        while (i < len(hold_labels_column)):
+            column_scan = A18_coordinate[0] + column_distance * i
+            if (column_scan - 10) <= coordinate[0] <= (column_scan + 10):
+                column_label = hold_labels_column[i]
+                break
+            i += 1
+
+        # check row
+        i = 0
+        while (i < len(hold_labels_row)):
+            row_scan = A18_coordinate[1] + row_distance * i
+            if (row_scan - 10) <= coordinate[1] <= (row_scan + 10):
+                row_label = hold_labels_row[i]
+                break
+            i += 1
+        
+        # create the (column + row) label 
+        label = column_label + str(row_label)
+        hold_labels.append(label)
+
+    return hold_labels
+
+
+def run_detector(path):
+    # read image, separate into two ROI, board and text.
     img = read_image(path)
     colored_board, colored_text = crop_img(img)
+    # create red, blue, and green masks for easier circle detection
     red_masked, blue_masked, green_masked =  remove_background_noise(colored_board)
-    
     # blur each masks
     red_blurred = blur_image(red_masked)
     blue_blurred = blur_image(blue_masked)
     green_blurred = blur_image(green_masked)    
-
+    # detect the circle's color and its coordination
     detect_red = detect_circle(red_blurred)
     detect_blue = detect_circle(blue_blurred)
     detect_green = detect_circle(green_blurred)
     # detect the boulder's name and its grade, return a list
-    detect_text = detect_text(colored_text)
+    text_image = detect_text(colored_text)
+    print(text_image)
+    # map each coordinate into moonboard hold position
+    red_labels = map_coordinates(detect_red, "red")
+    blue_labels = map_coordinates(detect_blue, "blue")
+    green_labels = map_coordinates(detect_green, "green")
+    print(red_labels, blue_labels, green_labels, sep="\n")
 
-    print(detect_red)
-    print(detect_blue)
-    print(detect_green)
-    print(detect_text)
-    
+if __name__ == "__main__":
+    path_1 = "/Users/patrickdharma/Desktop/programming/openCV/moonboard_DatasetProject/Resources/Photos/A18.PNG"
+    path_2 = "/Users/patrickdharma/Desktop/programming/openCV/moonboard_DatasetProject/Resources/Photos/B18.PNG"
+    path_3 = "/Users/patrickdharma/Desktop/programming/openCV/moonboard_DatasetProject/Resources/Photos/A17.PNG"
+    run_detector(path_1)
+    print()
+    run_detector(path_2)
+    print()
+    run_detector(path_3)
+
     # call the mouse_callback function with the cropped image part
     # mouse_callback("measurer", board_part)
 
