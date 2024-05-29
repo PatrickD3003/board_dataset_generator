@@ -283,23 +283,24 @@ def run_detector(path):
     red_blurred = blur_image(red_masked)
     blue_blurred = blur_image(blue_masked)
     green_blurred = blur_image(green_masked)    
-    # detect the circle's color and its coordination
+    # detect the circle's color and its coordinate
     detect_red = detect_circle(red_blurred)
     detect_blue = detect_circle(blue_blurred)
     detect_green = detect_circle(green_blurred)
     # detect the boulder's name and its grade, return a list
     text_image = detect_text(colored_text)
-    print(text_image)
-    # map each coordinate into moonboard hold position
+    # map each coordinate into moonboard hold labels
     red_labels = map_coordinates(detect_red, "red")
     blue_labels = map_coordinates(detect_blue, "blue")
     green_labels = map_coordinates(detect_green, "green")
-    print(red_labels, blue_labels, green_labels, sep="\n")
+
+    print(text_image, red_labels, blue_labels, green_labels, sep="\n")
 
 if __name__ == "__main__":
     path_1 = "/Users/patrickdharma/Desktop/programming/openCV/moonboard_DatasetProject/Resources/Photos/A18.PNG"
     path_2 = "/Users/patrickdharma/Desktop/programming/openCV/moonboard_DatasetProject/Resources/Photos/B18.PNG"
     path_3 = "/Users/patrickdharma/Desktop/programming/openCV/moonboard_DatasetProject/Resources/Photos/A17.PNG"
+    
     run_detector(path_1)
     print()
     run_detector(path_2)
