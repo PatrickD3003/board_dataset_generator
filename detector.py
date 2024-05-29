@@ -270,6 +270,10 @@ def map_coordinates(coordinates, color):
 
 
 def run_detector(path):
+    """
+    a function that summarize the detection process
+    return the problem's name & grade & the holds position.
+    """
     # read image, separate into two ROI, board and text.
     img = read_image(path)
     colored_board, colored_text = crop_img(img)
