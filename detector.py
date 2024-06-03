@@ -4,6 +4,7 @@ import cv2 as cv
 import os
 import pytesseract
 from PIL import Image
+import easyocr
 import re
 
 def click_event(event, x, y, flags, param):
@@ -33,10 +34,11 @@ def crop_img(img):
     [row_start:row_end, col_start:col_end]
     """
     board_part = img[600:2332, 26:1124] 
-    text_part = img[313:561, 13:1155]
+    text_part1 = img[328:582, 151:1049]
+    #text_part2 = img[383:445, 389:560]
     # cv.imshow('text', text_part)
     # cv.waitKey(0)
-    return board_part, text_part
+    return board_part, text_part1
 
 
 def read_image(path):
@@ -182,7 +184,7 @@ def detect_circle(board_image):
     return detected_coordinates
 
 
-def detect_text(text_image):
+def detect_text(text_image1):
     """
     1. input screenshot of a text containing moonboard problem's name & grade
     2. detect the text.
@@ -191,24 +193,33 @@ def detect_text(text_image):
     a = detect_text(text_image)
     a = ["Three combination", "V8"]
     """
-    ocr_result = pytesseract.image_to_string(text_image)
-    # print(ocr_result)
-    lines = ocr_result.split("\n")
-    first_two_lines = lines[:3]
-    first_two_lines = [line for line in first_two_lines if line != '']
+
+    reader = easyocr.Reader(['en'])  # Specify language(s)
+    result = reader.readtext(text_image1)
+    text2 = ' '.join([item[1] for item in result])
+
+    text1 = pytesseract.image_to_string(text_image1)
+
+    first_two_lines = []
+    first_two_lines.append(text1[0])
+    lines = text1.split("\n")
+    #first_two_lines = lines[:3]
+    first_two_lines = [line for line in lines if line != '']
     cleaned_lines = []
+    text2 = text2.replace("Z","7")
     for i,line in enumerate(first_two_lines):
         if i ==0:
-            cleaned_line = re.sub(r'^[^a-zA-Z]+', '', line)  # Remove leading non-alphabetic characters
-            cleaned_line = re.sub(r'[^a-zA-Z]+$', '', cleaned_line)  # Remove trailing non-alphabetic characters
-            cleaned_line = cleaned_line.strip()  # Remove leading and trailing whitespace
+            match = re.search(r'[a-zA-Z]+(?:\s[a-zA-Z]+)*|\d+[a-zA-Z]+|[a-zA-Z]+\d+', line)
+            cleaned_line = match.group(0) if match else ''      
             
         if i ==1:
-            match = re.search(r'\b[3-9][A-C]\+?/V\d\b', line)
-            cleaned_line = match.group(0) if match else ''
+
+            match = re.search(r'\b[5-9][A-Z]\+?\/V?(1[0-9]|20|[1-9])\b',text2)
+            cleaned_line = match.group(0).replace('/',"/V") if 'V' not in match.group(0) else match.group(0) 
+
         cleaned_lines.append(cleaned_line)
     # print(first_two_lines)
-
+    print(text2)
 
     return cleaned_lines
 
@@ -276,7 +287,7 @@ def run_detector(path):
     """
     # read image, separate into two ROI, board and text.
     img = read_image(path)
-    colored_board, colored_text = crop_img(img)
+    colored_board, colored_text1 = crop_img(img)
     # create red, blue, and green masks for easier circle detection
     red_masked, blue_masked, green_masked =  remove_background_noise(colored_board)
     # blur each masks
@@ -288,18 +299,20 @@ def run_detector(path):
     detect_blue = detect_circle(blue_blurred)
     detect_green = detect_circle(green_blurred)
     # detect the boulder's name and its grade, return a list
-    text_image = detect_text(colored_text)
+    text_image = detect_text(colored_text1)
     # map each coordinate into moonboard hold labels
     red_labels = map_coordinates(detect_red, "red")
     blue_labels = map_coordinates(detect_blue, "blue")
     green_labels = map_coordinates(detect_green, "green")
-
+    cv.imshow("img",colored_text1)
+    cv.waitKey(0)
+    cv.destroyAllWindows()
     print(text_image, red_labels, blue_labels, green_labels, sep="\n")
 
 if __name__ == "__main__":
-    path_1 = "/Users/patrickdharma/Desktop/programming/openCV/moonboard_DatasetProject/Resources/Photos/A18.PNG"
-    path_2 = "/Users/patrickdharma/Desktop/programming/openCV/moonboard_DatasetProject/Resources/Photos/B18.PNG"
-    path_3 = "/Users/patrickdharma/Desktop/programming/openCV/moonboard_DatasetProject/Resources/Photos/A17.PNG"
+    path_1 = "/Users/wybeeboi/Documents/moonboard generator 2 /board_dataset_generator/Resources/Photos/A18.PNG"
+    path_2 = "/Users/wybeeboi/Documents/moonboard generator 2 /board_dataset_generator/Resources/Photos/B18.PNG"
+    path_3 = "/Users/wybeeboi/Documents/moonboard generator 2 /board_dataset_generator/Resources/Photos/k18.PNG"
     
     run_detector(path_1)
     print()
