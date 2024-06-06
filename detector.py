@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 import cv2 as cv
 import os
 import pytesseract
-from PIL import Image
 import easyocr
 import re
+import sqlite3
 
 def click_event(event, x, y, flags, param):
     """
@@ -203,8 +203,8 @@ def detect_text(text_image1):
     first_two_lines = []
     first_two_lines.append(text1[0])
     lines = text1.split("\n")
-    #first_two_lines = lines[:3]
-    first_two_lines = [line for line in lines if line != '']
+    first_two_lines = lines[:2]
+
     cleaned_lines = []
     text2 = text2.replace("Z","7")
     for i,line in enumerate(first_two_lines):
@@ -213,13 +213,11 @@ def detect_text(text_image1):
             cleaned_line = match.group(0) if match else ''      
             
         if i ==1:
-
             match = re.search(r'\b[5-9][A-Z]\+?\/V?(1[0-9]|20|[1-9])\b',text2)
             cleaned_line = match.group(0).replace('/',"/V") if 'V' not in match.group(0) else match.group(0) 
 
         cleaned_lines.append(cleaned_line)
-    # print(first_two_lines)
-    print(text2)
+
 
     return cleaned_lines
 
@@ -280,6 +278,36 @@ def map_coordinates(coordinates, color):
     return hold_labels
 
 
+def data_to_database(problem_name, red, blue, green):
+    """
+    collect all important datas and store it in SQLite file.
+    including the boulder's name, grade, and the holds used on the boulder.
+    input examples:
+    problem_name = ['11D', '7C/V9']
+    red = ['B18']
+    blue = ['A5', 'F12', 'D11', 'K7', 'G8', 'K12']
+    green = ['J3', 'E4']
+    """
+    connect_sql = sqlite3.connect('boards.db')
+    cursor = connect_sql.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS problems
+                    (name TEXT PRIMARY KEY, grade TEXT, goal TEXT, middle TEXT, start TEXT) ''')
+    
+    # prepare data to be inserted
+    name = problem_name[0]
+    grade = problem_name[1]
+    goal = ','.join(red)  # convert list to a comma-separated string
+    middle = ','.join(blue)  # same here
+    start = ','.join(green)  # same here
+
+    # insert the data into the table
+    cursor.execute('''INSERT OR REPLACE INTO problems (name, grade, goal, middle, start)
+                   VALUES(?, ?, ?, ?, ?)''', (name, grade, goal, middle, start))
+    # commit the transaction and close the connection
+    connect_sql.commit()
+    connect_sql.close()
+
+
 def run_detector(path):
     """
     a function that summarize the detection process
@@ -304,21 +332,23 @@ def run_detector(path):
     red_labels = map_coordinates(detect_red, "red")
     blue_labels = map_coordinates(detect_blue, "blue")
     green_labels = map_coordinates(detect_green, "green")
-    cv.imshow("img",colored_text1)
-    cv.waitKey(0)
-    cv.destroyAllWindows()
+
     print(text_image, red_labels, blue_labels, green_labels, sep="\n")
 
+    # input to json file
+    data_to_database(text_image, red_labels, blue_labels, green_labels)
+
+
 if __name__ == "__main__":
-    path_1 = "/Users/wybeeboi/Documents/moonboard generator 2 /board_dataset_generator/Resources/Photos/A18.PNG"
-    path_2 = "/Users/wybeeboi/Documents/moonboard generator 2 /board_dataset_generator/Resources/Photos/B18.PNG"
-    path_3 = "/Users/wybeeboi/Documents/moonboard generator 2 /board_dataset_generator/Resources/Photos/k18.PNG"
+    path_1 = "/Users/patrickdharma/Desktop/programming/openCV/moonboard_DatasetProject/Resources/Photos/A18.PNG"
+    path_2 = "/Users/patrickdharma/Desktop/programming/openCV/moonboard_DatasetProject/Resources/Photos/B18.PNG"
+    path_3 = "/Users/patrickdharma/Desktop/programming/openCV/moonboard_DatasetProject/Resources/Photos/k18.PNG"
     
     run_detector(path_1)
     print()
     run_detector(path_2)
     print()
-    run_detector(path_3)
+    run_detector(path_3) 
 
     # call the mouse_callback function with the cropped image part
     # mouse_callback("measurer", board_part)
