@@ -6,7 +6,7 @@ def click_event(event, x, y, flags, param):
         print(x, ',', y)  # Print the coordinates of the point clicked
 
 # Load the image
-img = cv2.imread('../Resources/Photos/moonboard.PNG')
+img = cv2.imread('/Users/wybeeboi/Documents/moonboard generator 2 /board_dataset_generator/Resources/Photos/A18.PNG')
 
 # Create a window and set a mouse callback function that calls `click_event`
 cv2.namedWindow('image')
