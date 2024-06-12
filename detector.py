@@ -5,7 +5,7 @@ import os
 import pytesseract
 import easyocr
 import re
-import sqlite3
+from database.database import data_to_database
 
 def click_event(event, x, y, flags, param):
     """
@@ -44,15 +44,11 @@ def crop_img(img):
 def read_image(path):
     # Expand user path if it starts with ~
     path = os.path.expanduser(path)
-    print(f"Reading image from: {path}")
+    print(f"Reading image from: {path}")  # **debug purpose**
 
     img = cv.imread(path)
     if img is None:
         raise FileNotFoundError(f"Image not found at the path: {path}")
-    
-    gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY) 
-    # Blur using 3 * 3 kernel. 
-    gray_blurred = cv.blur(gray, (3, 3))
 
     return img
 
@@ -199,7 +195,7 @@ def detect_text(text_image1):
     text2 = ' '.join([item[1] for item in result])
 
     text1 = pytesseract.image_to_string(text_image1)
-
+    # print(text1)  # **for debugging purpose**
     first_two_lines = []
     first_two_lines.append(text1[0])
     lines = text1.split("\n")
@@ -278,37 +274,7 @@ def map_coordinates(coordinates, color):
     return hold_labels
 
 
-def data_to_database(problem_name, red, blue, green):
-    """
-    collect all important datas and store it in SQLite file.
-    including the boulder's name, grade, and the holds used on the boulder.
-    input examples:
-    problem_name = ['11D', '7C/V9']
-    red = ['B18']
-    blue = ['A5', 'F12', 'D11', 'K7', 'G8', 'K12']
-    green = ['J3', 'E4']
-    """
-    connect_sql = sqlite3.connect('boards.db')
-    cursor = connect_sql.cursor()
-    cursor.execute('''CREATE TABLE IF NOT EXISTS problems
-                    (name TEXT PRIMARY KEY, grade TEXT, goal TEXT, middle TEXT, start TEXT) ''')
-    
-    # prepare data to be inserted
-    name = problem_name[0]
-    grade = problem_name[1]
-    goal = ','.join(red)  # convert list to a comma-separated string
-    middle = ','.join(blue)  # same here
-    start = ','.join(green)  # same here
-
-    # insert the data into the table
-    cursor.execute('''INSERT OR REPLACE INTO problems (name, grade, goal, middle, start)
-                   VALUES(?, ?, ?, ?, ?)''', (name, grade, goal, middle, start))
-    # commit the transaction and close the connection
-    connect_sql.commit()
-    connect_sql.close()
-
-
-def run_detector(path):
+def run_detector(path, grade):
     """
     a function that summarize the detection process
     return the problem's name & grade & the holds position.
@@ -335,20 +301,31 @@ def run_detector(path):
 
     print(text_image, red_labels, blue_labels, green_labels, sep="\n")
 
-    # input to json file
-    data_to_database(text_image, red_labels, blue_labels, green_labels)
+    # input to database
+    data_to_database(text_image, red_labels, blue_labels, green_labels, grade)
 
+
+def scan_all(grade):
+    """
+    a function to scan whole file in a directory.
+    for example, scan_all("V3") will open V3 folder,
+    scan everything inside and put it in database.
+    """
+    # define the folder's path
+    folder_path = f"Resources/Photos/{grade}"
+    # List all items in the directory, count how many files inside
+    items = os.listdir(folder_path)
+    # exclude hidden and system files
+    items = [item for item in items if item != '.DS_Store']
+    count = len(items)
+
+    # use run_detector function on all files 
+    for num in range(count):
+        file_path = folder_path + f"/{grade}_{num+1}.PNG"
+        run_detector(file_path, grade)
 
 if __name__ == "__main__":
-    path_1 = "/Users/patrickdharma/Desktop/programming/openCV/moonboard_DatasetProject/Resources/Photos/A18.PNG"
-    path_2 = "/Users/patrickdharma/Desktop/programming/openCV/moonboard_DatasetProject/Resources/Photos/B18.PNG"
-    path_3 = "/Users/patrickdharma/Desktop/programming/openCV/moonboard_DatasetProject/Resources/Photos/k18.PNG"
-    
-    run_detector(path_1)
-    print()
-    run_detector(path_2)
-    print()
-    run_detector(path_3) 
+    scan_all("V3")
 
     # call the mouse_callback function with the cropped image part
     # mouse_callback("measurer", board_part)
