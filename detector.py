@@ -305,6 +305,20 @@ def run_detector(path, grade):
     data_to_database(text_image, red_labels, blue_labels, green_labels, grade)
 
 
+def list_item_in_folder(folder_path):
+    """
+    function to count number of items in a directory,
+    excluding the hidden files
+    """
+    # List all items in the directory, count how many files inside
+    items = os.listdir(folder_path)
+    # exclude hidden and system files
+    items = [item for item in items if item != '.DS_Store']
+    count = len(items)
+
+    return count
+
+
 def scan_all(grade):
     """
     a function to scan whole file in a directory.
@@ -313,11 +327,8 @@ def scan_all(grade):
     """
     # define the folder's path
     folder_path = f"Resources/Photos/{grade}"
-    # List all items in the directory, count how many files inside
-    items = os.listdir(folder_path)
-    # exclude hidden and system files
-    items = [item for item in items if item != '.DS_Store']
-    count = len(items)
+    # count number of files with list_item_in_folder() function
+    count = list_item_in_folder(folder_path)
 
     # use run_detector function on all files 
     for num in range(count):
