@@ -6,22 +6,14 @@ import pytesseract
 import easyocr
 import re
 from database.database import data_to_database
+from tools.hex_to_hsv import hex_to_hsv
 
-def click_event(event, x, y, flags, param):
-    """
-    Function to display the coordinates of the points where mouse is clicked
-    """
-    if event == cv.EVENT_LBUTTONDOWN:  # Left button of the mouse is clicked
-        print(x, ',', y)  # Print the coordinates of the point clicked
-
-
-def mouse_callback(name, img):
-    cv.namedWindow(name)  
-    cv.setMouseCallback(name, click_event)
-    # Display the image
-    cv.imshow(name, img)
-    cv.waitKey(0)
-    cv.destroyAllWindows()
+#  色のHSV値の初期化
+HSV_RED = hex_to_hsv("#f44336")
+HSV_BLUE = hex_to_hsv("#2961fe")
+HSV_GREEN = np.array([62, 139, 197])
+HSV_YELLOW = [27, 141, 235]
+HSV_BLACK = [120, 8, 32]
 
 
 def crop_img(img):
@@ -35,7 +27,6 @@ def crop_img(img):
     """
     board_part = img[600:2332, 26:1124] 
     text_part1 = img[328:582, 151:1049]
-    #text_part2 = img[383:445, 389:560]
     # cv.imshow('text', text_part)
     # cv.waitKey(0)
     return board_part, text_part1
@@ -59,25 +50,7 @@ def blur_image(img):
     return gray_blurred
 
 
-def hex_to_hsv(hex_color):
-    """
-    a tool to convert hex into its hsv value.
-    source: chatGPT
-    """
-    # Convert HEX to RGB
-    # remove the # from the beginning of the HEX string
-    hex_color = hex_color.lstrip('#')
-    # split the HEX string into its red, green, and blue
-    rgb_color = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
-    # convert these components to integers
-    rgb_color = np.uint8([[rgb_color]])  # create an array for OpenCV
-
-    # Convert RGB to HSV
-    hsv_color = cv.cvtColor(rgb_color, cv.COLOR_RGB2HSV)
-    return hsv_color[0][0]
-
-
-def remove_background_noise(colored_board):
+def remove_background_noise(colored_board, hsv_value):
     """
     using cv2.bitwise_and() between mask and the image
     to track a color, we define a mask in HSV color space using cv2.inRange()
@@ -95,48 +68,24 @@ def remove_background_noise(colored_board):
     # Saturation: the intensity or purity of the color(ranging 0-255)
     # value: the brightness of the color (ranging 0-255)
     hsv = cv.cvtColor(colored_board, cv.COLOR_BGR2HSV)
-
-    # HSV value for moonboard red #f44336
-    hsv_red = hex_to_hsv("#f44336")
-    # hsv_red = np.array([171, 167, 235])  # different kind of red, used in "hold filter" mode in MB app
-    # HSV value for moonboard blue #2961fe
-    hsv_blue = hex_to_hsv("#2961fe")
-    # HSV value for moonboard green #00c852
-    hsv_green = np.array([62, 139, 197])
-
-
-    # define range of red color in HSV
-    lower_red = np.array([hsv_red[0] - 10, hsv_red[1] - 40, hsv_red[2] - 40])
-    upper_red = np.array([hsv_red[0] + 10, hsv_red[1] + 40 ,hsv_red[2] + 40])
-
-    # define range of blue color in HSV
-    lower_blue = np.array([hsv_blue[0] - 10, hsv_blue[1] - 40, hsv_blue[2] - 40])
-    upper_blue = np.array([hsv_blue[0] + 10, hsv_blue[1] + 40, hsv_blue[2] + 40])
-
-    # define range of green color in HSV
-    lower_green = np.array([hsv_green[0] - 10, hsv_green[1] - 40, hsv_green[2] - 40])
-    upper_green = np.array([hsv_green[0] + 10, hsv_green[1] + 40, hsv_green[2] + 40]) 
-    
+    # define range of the color in hsv value
+    lower = np.array([hsv_value[0] - 10, hsv_value[1] - 40, hsv_value[2] - 40])
+    upper = np.array([hsv_value[0] + 10, hsv_value[1] + 40 ,hsv_value[2] + 40])
     # create a mask
-    red_mask = cv.inRange(hsv, lower_red, upper_red)
-    blue_mask = cv.inRange(hsv, lower_blue, upper_blue)
-    green_mask = cv.inRange(hsv, lower_green, upper_green)
-
+    mask = cv.inRange(hsv, lower, upper)
     # Bitwise-AND mask and original image
-    red_result = cv.bitwise_and(colored_board, colored_board, mask= red_mask)
-    blue_result = cv.bitwise_and(colored_board, colored_board, mask= blue_mask)
-    green_result = cv.bitwise_and(colored_board, colored_board, mask= green_mask)
+    result = cv.bitwise_and(colored_board, colored_board, mask= mask)
 
     # # display the mask and masked image
-    # cv.imshow('Mask', red_mask)
+    # cv.imshow('Mask', mask)
     # cv.waitKey(0)
-    # cv.imshow('Masked Image', red_result)
+    # cv.imshow('Masked Image', result)
     # cv.waitKey(0)
     # cv.imshow('colored_board', colored_board)
     # cv.waitKey(0)
     # cv.destroyAllWindows()
 
-    return red_result, blue_result, green_result
+    return result
 
 
 def detect_circle(board_image):
@@ -274,16 +223,19 @@ def map_coordinates(coordinates, color):
     return hold_labels
 
 
-def run_detector(path, grade):
+def run_detector(path=f"Resources/Photos/TESTRUN/test.PNG", grade="VTest"):
     """
     a function that summarize the detection process
     return the problem's name & grade & the holds position.
     """
     # read image, separate into two ROI, board and text.
     img = read_image(path)
-    colored_board, colored_text1 = crop_img(img)
-    # create red, blue, and green masks for easier circle detection
-    red_masked, blue_masked, green_masked =  remove_background_noise(colored_board)
+    colored_board, colored_text = crop_img(img)
+
+    # red_masked, blue_masked, green_masked =  remove_background_noise(colored_board)
+    red_masked = remove_background_noise(colored_board, HSV_RED)
+    blue_masked = remove_background_noise(colored_board, HSV_BLUE)
+    green_masked = remove_background_noise(colored_board, HSV_GREEN)
     # blur each masks
     red_blurred = blur_image(red_masked)
     blue_blurred = blur_image(blue_masked)
@@ -293,7 +245,7 @@ def run_detector(path, grade):
     detect_blue = detect_circle(blue_blurred)
     detect_green = detect_circle(green_blurred)
     # detect the boulder's name and its grade, return a list
-    text_image = detect_text(colored_text1)
+    text_image = detect_text(colored_text)
     # map each coordinate into moonboard hold labels
     red_labels = map_coordinates(detect_red, "red")
     blue_labels = map_coordinates(detect_blue, "blue")
@@ -335,9 +287,9 @@ def scan_all(grade):
         file_path = folder_path + f"/{grade}_{num+1}.PNG"
         run_detector(file_path, grade)
 
-if __name__ == "__main__":
-    scan_all("V3")
 
+if __name__ == "__main__":
+    scan_all("V4")
     # call the mouse_callback function with the cropped image part
     # mouse_callback("measurer", board_part)
 

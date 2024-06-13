@@ -18,5 +18,5 @@ def analyze_hsv_values(image_path):
     cv.destroyAllWindows()
 
 # Provide the path to your image
-image_path = '/Users/patrickdharma/Desktop/programming/openCV/moonboard_DatasetProject/Resources/Photos/moonboard.PNG'
+image_path = '../Resources/Photos/V3/V3_1.png'
 analyze_hsv_values(image_path)
