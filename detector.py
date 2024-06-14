@@ -159,12 +159,13 @@ def detect_text(text_image1):
             match = re.search(r'[a-zA-Z]+(?:\s[a-zA-Z]+)*|\d+[a-zA-Z]+|[a-zA-Z]+\d+', line)
             cleaned_line = match.group(0) if match else ''      
             
-        if i ==1:
-            match = re.search(r'\b[5-9][A-Z]\+?\/V?(1[0-9]|20|[1-9])\b',text2)
-            cleaned_line = match.group(0).replace('/',"/V") if 'V' not in match.group(0) else match.group(0) 
-
+        if i == 1:
+                match = re.search(r'\b[5-9][A-Z]\+?\/V?(1[0-9]|20|[1-9])\b', text2)
+                if match:
+                    cleaned_line = match.group(0).replace('/', "/V") if 'V' not in match.group(0) else match.group(0)
+                else:
+                    cleaned_line = "None"  # Handle case where match is None
         cleaned_lines.append(cleaned_line)
-
 
     return cleaned_lines
 
@@ -293,7 +294,7 @@ def scan_all(grade):
 
 
 if __name__ == "__main__":
-    scan_all("V4")
+    scan_all("V7")
     # call the mouse_callback function with the cropped image part
     # mouse_callback("measurer", board_part)
 
