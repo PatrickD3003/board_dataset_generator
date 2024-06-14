@@ -36,10 +36,12 @@ def read_image(path):
     # Expand user path if it starts with ~
     path = os.path.expanduser(path)
     print(f"Reading image from: {path}")  # **debug purpose**
-
     img = cv.imread(path)
     if img is None:
-        raise FileNotFoundError(f"Image not found at the path: {path}")
+        None
+    else:
+        # Proceed with your image processing tasks
+        print("Image loaded successfully.")
 
     return img
 
@@ -211,7 +213,7 @@ def map_coordinates(coordinates, color):
         i = 0
         while (i < len(hold_labels_row)):
             row_scan = A18_coordinate[1] + row_distance * i
-            if (row_scan - 10) <= coordinate[1] <= (row_scan + 10):
+            if (row_scan - 40) <= coordinate[1] <= (row_scan + 40):
                 row_label = hold_labels_row[i]
                 break
             i += 1
@@ -230,31 +232,33 @@ def run_detector(path=f"Resources/Photos/TESTRUN/test.PNG", grade="VTest"):
     """
     # read image, separate into two ROI, board and text.
     img = read_image(path)
-    colored_board, colored_text = crop_img(img)
+    if img is None:
+        print(f"Failed to load img")
+    else:
+        colored_board, colored_text = crop_img(img)
+        # red_masked, blue_masked, green_masked =  remove_background_noise(colored_board)
+        red_masked = remove_background_noise(colored_board, HSV_RED)
+        blue_masked = remove_background_noise(colored_board, HSV_BLUE)
+        green_masked = remove_background_noise(colored_board, HSV_GREEN)
+        # blur each masks
+        red_blurred = blur_image(red_masked)
+        blue_blurred = blur_image(blue_masked)
+        green_blurred = blur_image(green_masked)    
+        # detect the circle's color and its coordinate
+        detect_red = detect_circle(red_blurred)
+        detect_blue = detect_circle(blue_blurred)
+        detect_green = detect_circle(green_blurred)
+        # detect the boulder's name and its grade, return a list
+        text_image = detect_text(colored_text)
+        # map each coordinate into moonboard hold labels
+        red_labels = map_coordinates(detect_red, "red")
+        blue_labels = map_coordinates(detect_blue, "blue")
+        green_labels = map_coordinates(detect_green, "green")
 
-    # red_masked, blue_masked, green_masked =  remove_background_noise(colored_board)
-    red_masked = remove_background_noise(colored_board, HSV_RED)
-    blue_masked = remove_background_noise(colored_board, HSV_BLUE)
-    green_masked = remove_background_noise(colored_board, HSV_GREEN)
-    # blur each masks
-    red_blurred = blur_image(red_masked)
-    blue_blurred = blur_image(blue_masked)
-    green_blurred = blur_image(green_masked)    
-    # detect the circle's color and its coordinate
-    detect_red = detect_circle(red_blurred)
-    detect_blue = detect_circle(blue_blurred)
-    detect_green = detect_circle(green_blurred)
-    # detect the boulder's name and its grade, return a list
-    text_image = detect_text(colored_text)
-    # map each coordinate into moonboard hold labels
-    red_labels = map_coordinates(detect_red, "red")
-    blue_labels = map_coordinates(detect_blue, "blue")
-    green_labels = map_coordinates(detect_green, "green")
+        print(text_image, red_labels, blue_labels, green_labels, sep="\n")
 
-    print(text_image, red_labels, blue_labels, green_labels, sep="\n")
-
-    # input to database
-    data_to_database(text_image, red_labels, blue_labels, green_labels, grade)
+        # input to database
+        data_to_database(text_image, red_labels, blue_labels, green_labels, grade)
 
 
 def list_item_in_folder(folder_path):
