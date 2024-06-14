@@ -294,7 +294,7 @@ def scan_all(grade):
 
 
 if __name__ == "__main__":
-    scan_all("V7")
+    scan_all("V10")
     # call the mouse_callback function with the cropped image part
     # mouse_callback("measurer", board_part)
 
