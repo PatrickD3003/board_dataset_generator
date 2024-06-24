@@ -16,10 +16,12 @@ class Apriori:
         'V4' : [ (problem1_name, "hold1,hold2,hold3", "hold4,hold5", "hold6"), (problem2_name, "hold1,hold2,hold3", "hold4,hold5", "hold6"), (problem3_name, "hold1,hold2,hold3", "hold4,hold5", "hold6") ] 
         etc }
 
-    2. make a new dictionary:
-       containing all the holds used in V{i} as key, and its total appearance as value
+    2. Generate level 1 itemsets:
+       Containing all the holds used in V{i} as key, and its total appearance(candidate support count) as value.
+       Compare the candidate support count with minimum support count, remove if its smaller than the minimum support count.
        ex (holds data on V3)
        L1 = {'A1': 2, 'A2': 1,'A3': 4}
+       minimum support count = 2, remove 'A2'.
     """
     def __init__(self, grade):
         self.lowest_grade = 3
