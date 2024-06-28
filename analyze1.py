@@ -75,7 +75,7 @@ def input_data_to_dictionary():
         for hold in appeared_holds:
             selected_holds = holds_dict[hold]
             selected_holds[grade] += 1
-
+        
     return holds_dict
 
 def create_graph(holds_dict):
@@ -92,4 +92,4 @@ def create_graph(holds_dict):
 
 
 holds_dictionary = input_data_to_dictionary()
-create_graph(holds_dictionary)``
+print(holds_dictionary)

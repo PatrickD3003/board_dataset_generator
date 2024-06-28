@@ -283,7 +283,7 @@ def scan_all(grade):
     scan everything inside and put it in database.
     """
     # define the folder's path
-    folder_path = f"Resources/Photos/{grade}"
+    folder_path = f"/Resources/Photos/{grade}"
     # count number of files with list_item_in_folder() function
     count = list_item_in_folder(folder_path)
 
@@ -294,7 +294,7 @@ def scan_all(grade):
 
 
 if __name__ == "__main__":
-    scan_all("V10")
+    scan_all("V3")
     # call the mouse_callback function with the cropped image part
     # mouse_callback("measurer", board_part)
 
