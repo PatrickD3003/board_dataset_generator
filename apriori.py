@@ -22,12 +22,16 @@ class Apriori:
        ex (holds data on V3)
        L1 = {'A1': 2, 'A2': 1,'A3': 4}
        minimum support count = 2, remove 'A2'.
+       L1 = {'A1': 2, 'A3': 4}
+
+       L2 = {'A1,A2': }
+       L3 = {'A1', 'A2', 'H3': }
     """
     def __init__(self, grade: str):
         self.lowest_grade = 3
         self.highest_grade = 10
         self.raw_data = get_data_from_database(grade)
-        self.min_support_count = 2
+        self.min_support_count = 1
     
     def get_raw_data(self):
         return self.raw_data
@@ -69,14 +73,17 @@ class Apriori:
     
     def extract_unique_element(self, l_data_keys: list) -> list:
         """
-        generate aa list of unique elements from a list of tuples(or lists) of data keys.
+        generate a list of unique elements from a list of set of data keys.
         """
-        unique_element = []
-        for tuple_data in l_data_keys:
-            for element in tuple_data:
-                if element not in unique_element:
-                    unique_element.append(element)
-        return unique_element
+        unique_element = set()
+        i = 0
+
+        while i < len(l_data_keys):
+            for element in l_data_keys[i]:
+                unique_element.add(element)
+            i += 1
+
+        return list(unique_element)
     
     def create_combination(self, l_data: dict) -> list:
         """
@@ -86,15 +93,18 @@ class Apriori:
         """
         l_data_keys = [set(key) for key in l_data]
         unique_element = self.extract_unique_element(l_data_keys)
-        combination_data = []
+        combination_data = set()
+
         for l_data_set in l_data_keys:
             for element in unique_element:
                 # create a new combined set
-                combined_set = set(l_data_set)
-                combined_set.add(element)
+                combined_set = l_data_set | {element}
+                if len(combined_set) == len(l_data_set) + 1:
+                    combination_data.add(frozenset(combined_set))
                 if (len(combined_set) == len(l_data_set) + 1) and (combined_set not in combination_data):
                     combination_data.append(combined_set)
-        # turn it into tuple again
+
+        # turn it into a list of tuples
         combination_data = [tuple(data) for data in combination_data]
         return combination_data
     
@@ -173,7 +183,7 @@ class Apriori:
         l3_data = self.get_l3(processed_data, l2_data)
         # create l4 combination
         l4_data = self.get_l4(processed_data, l3_data)
-        return l4_data
+        return l3_data
     
 def analyze_with_apriori() -> dict:
     """

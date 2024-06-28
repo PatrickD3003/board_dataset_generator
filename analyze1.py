@@ -92,4 +92,6 @@ def create_graph(holds_dict):
 
 
 holds_dictionary = input_data_to_dictionary()
-create_graph(holds_dictionary)``
+# create_graph(holds_dictionary)
+for key in holds_dictionary:
+    print(key, holds_dictionary[key])
