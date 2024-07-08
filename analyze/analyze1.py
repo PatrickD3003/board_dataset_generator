@@ -88,8 +88,14 @@ def create_graph(holds_dict):
         y_value = [xy_value[key] for key in xy_value]
         ax.bar(x_value, y_value)
         ax.set_yticks(range(0, 20))
-        fig.savefig(f"analyze/{label_name}.PNG")
+        fig.savefig(f"hold_frequency_graph/{label_name}.PNG")
 
 
 holds_dictionary = input_data_to_dictionary()
+<<<<<<< HEAD:analyze1.py
 print(holds_dictionary)
+=======
+# create_graph(holds_dictionary)
+for key in holds_dictionary:
+    print(key, holds_dictionary[key])
+>>>>>>> d2821b661bf7e73603aa04191f8307435a7e0f9e:analyze/analyze1.py

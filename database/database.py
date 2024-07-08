@@ -41,30 +41,9 @@ def get_data_from_database(table_name):
     cursor = connect_sql.cursor()
     # writing the query
     query = f'SELECT name,goal,middle,start from {table_name}'
-    
-    get_problem_name = f'SELECT name from {table_name}'
-    get_goal_label = f'SELECT goal from {table_name}'
-    get_middle_label = f'SELECT middle from {table_name}'
-    get_start_label = f'SELECT start from {table_name}'
     # execute query & fetch results
-    # all
     cursor.execute(query)
     get_all = cursor.fetchall()
-    # name
-    cursor.execute(get_problem_name)
-    problem_name = cursor.fetchall()   
-    # goal
-    cursor.execute(get_goal_label)
-    goal_label = cursor.fetchall()    
-    # goal_label = goal_label.split(",")
-    # middle
-    cursor.execute(get_middle_label)
-    middle_label = cursor.fetchall()   
-    # middle_label = middle_label.split(",")
-    # start
-    cursor.execute(get_start_label)
-    start_label = cursor.fetchall()   
-    # start_label = start_label.split(",")
     connect_sql.close()
 
     return get_all
