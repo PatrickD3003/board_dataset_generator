@@ -1,4 +1,3 @@
-
 def scan_all(grade):
     """
     a function to scan whole file in a directory.
@@ -14,33 +13,6 @@ def scan_all(grade):
     for num in range(count):
         file_path = folder_path + f"/{grade}_{num+1}.PNG"
         run_detector(file_path, grade)
-
-def read_image(path):
-    # Expand user path if it starts with ~
-    path = os.path.expanduser(path)
-    print(f"Reading image from: {path}")  # **debug purpose**
-    img = cv.imread(path)
-    if img is None:
-        None
-    else:
-        # Proceed with your image processing tasks
-        print("Image loaded successfully.")
-
-    return img
-
-def draw_circle(image, a, b, r):
-    """
-    Draw the circumference of the circle
-    syntax : 
-    cv2.circle(image, center_coordinates, radius, color, thickness)
-    """
-    cv.circle(image, (a, b), r, (255, 0, 0), 2)
-    # Draw a small circle (of radius 1) to show the center.
-    cv.circle(image, (a, b), 1, (255, 0, 0), 3)
-    print(a, b, r)
-    cv.imshow("Detected Circle", image)
-    cv.waitKey(0)
-    cv.destroyAllWindows()
 
 def run_detector(path=f"Resources/Photos/TESTRUN/test.PNG", grade="VTest"):
     """
@@ -76,6 +48,19 @@ def run_detector(path=f"Resources/Photos/TESTRUN/test.PNG", grade="VTest"):
 
         # input to database
         data_to_database(text_image, red_labels, blue_labels, green_labels, grade)
+
+def read_image(path):
+    # Expand user path if it starts with ~
+    path = os.path.expanduser(path)
+    print(f"Reading image from: {path}")  # **debug purpose**
+    img = cv.imread(path)
+    if img is None:
+        None
+    else:
+        # Proceed with your image processing tasks
+        print("Image loaded successfully.")
+
+    return img
 
 def crop_img(img):
     """
@@ -259,6 +244,20 @@ def list_item_in_folder(folder_path):
     count = len(items)
 
     return count
+
+def draw_circle(image, a, b, r):
+    """
+    Draw the circumference of the circle
+    syntax : 
+    cv2.circle(image, center_coordinates, radius, color, thickness)
+    """
+    cv.circle(image, (a, b), r, (255, 0, 0), 2)
+    # Draw a small circle (of radius 1) to show the center.
+    cv.circle(image, (a, b), 1, (255, 0, 0), 3)
+    print(a, b, r)
+    cv.imshow("Detected Circle", image)
+    cv.waitKey(0)
+    cv.destroyAllWindows()
 
 if __name__ == "__main__":
     import numpy as np
