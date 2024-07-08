@@ -1,20 +1,81 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import cv2 as cv
-import os
-import pytesseract
-import easyocr
-import re
-from database.database import data_to_database
-from tools.hex_to_hsv import hex_to_hsv
 
-#  色のHSV値の初期化
-HSV_RED = hex_to_hsv("#f44336")
-HSV_BLUE = hex_to_hsv("#2961fe")
-HSV_GREEN = np.array([62, 139, 197])
-HSV_YELLOW = [27, 141, 235]
-HSV_BLACK = [120, 8, 32]
+def scan_all(grade):
+    """
+    a function to scan whole file in a directory.
+    for example, scan_all("V3") will open V3 folder,
+    scan everything inside and put it in database.
+    """
+    # define the folder's path
+    folder_path = f"Resources/Photos/{grade}"
+    # count number of files with list_item_in_folder() function
+    count = list_item_in_folder(folder_path)
 
+    # use run_detector function on all files 
+    for num in range(count):
+        file_path = folder_path + f"/{grade}_{num+1}.PNG"
+        run_detector(file_path, grade)
+
+def read_image(path):
+    # Expand user path if it starts with ~
+    path = os.path.expanduser(path)
+    print(f"Reading image from: {path}")  # **debug purpose**
+    img = cv.imread(path)
+    if img is None:
+        None
+    else:
+        # Proceed with your image processing tasks
+        print("Image loaded successfully.")
+
+    return img
+
+def draw_circle(image, a, b, r):
+    """
+    Draw the circumference of the circle
+    syntax : 
+    cv2.circle(image, center_coordinates, radius, color, thickness)
+    """
+    cv.circle(image, (a, b), r, (255, 0, 0), 2)
+    # Draw a small circle (of radius 1) to show the center.
+    cv.circle(image, (a, b), 1, (255, 0, 0), 3)
+    print(a, b, r)
+    cv.imshow("Detected Circle", image)
+    cv.waitKey(0)
+    cv.destroyAllWindows()
+
+def run_detector(path=f"Resources/Photos/TESTRUN/test.PNG", grade="VTest"):
+    """
+    a function that summarize the detection process
+    return the problem's name & grade & the holds position.
+    """
+    # read image, separate into two ROI, board and text.
+    img = read_image(path)
+    if img is None:
+        print(f"Failed to load img")
+    else:
+        colored_board, colored_text = crop_img(img)
+        # red_masked, blue_masked, green_masked =  remove_background_noise(colored_board)
+        red_masked = remove_background_noise(colored_board, HSV_RED)
+        blue_masked = remove_background_noise(colored_board, HSV_BLUE)
+        green_masked = remove_background_noise(colored_board, HSV_GREEN)
+        # blur each masks
+        red_blurred = blur_image(red_masked)
+        blue_blurred = blur_image(blue_masked)
+        green_blurred = blur_image(green_masked)    
+        # detect the circle's color and its coordinate
+        detect_red = detect_circle(red_blurred)
+        detect_blue = detect_circle(blue_blurred)
+        detect_green = detect_circle(green_blurred)
+        # detect the boulder's name and its grade, return a list
+        text_image = detect_text(colored_text)
+        # map each coordinate into moonboard hold labels
+        red_labels = map_coordinates(detect_red, "red")
+        blue_labels = map_coordinates(detect_blue, "blue")
+        green_labels = map_coordinates(detect_green, "green")
+
+        print(text_image, red_labels, blue_labels, green_labels, sep="\n")
+
+        # input to database
+        data_to_database(text_image, red_labels, blue_labels, green_labels, grade)
 
 def crop_img(img):
     """
@@ -30,27 +91,6 @@ def crop_img(img):
     # cv.imshow('text', text_part)
     # cv.waitKey(0)
     return board_part, text_part1
-
-
-def read_image(path):
-    # Expand user path if it starts with ~
-    path = os.path.expanduser(path)
-    print(f"Reading image from: {path}")  # **debug purpose**
-    img = cv.imread(path)
-    if img is None:
-        None
-    else:
-        # Proceed with your image processing tasks
-        print("Image loaded successfully.")
-
-    return img
-
-
-def blur_image(img):
-    gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-    gray_blurred = cv.blur(gray, (3, 3))
-    return gray_blurred
-
 
 def remove_background_noise(colored_board, hsv_value):
     """
@@ -77,18 +117,12 @@ def remove_background_noise(colored_board, hsv_value):
     mask = cv.inRange(hsv, lower, upper)
     # Bitwise-AND mask and original image
     result = cv.bitwise_and(colored_board, colored_board, mask= mask)
-
-    # # display the mask and masked image
-    # cv.imshow('Mask', mask)
-    # cv.waitKey(0)
-    # cv.imshow('Masked Image', result)
-    # cv.waitKey(0)
-    # cv.imshow('colored_board', colored_board)
-    # cv.waitKey(0)
-    # cv.destroyAllWindows()
-
     return result
 
+def blur_image(img):
+    gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    gray_blurred = cv.blur(gray, (3, 3))
+    return gray_blurred
 
 def detect_circle(board_image):
     """
@@ -99,15 +133,13 @@ def detect_circle(board_image):
     a = detect_circle(board_image)
     a = {"red":(x, y), "blue":(x, y), "blue":(x, y), "green":(x, y)}
     """
+    detected_coordinates = []
     # HoughCircles function requires a non-empty, single-channel (grayscale) image.
     # 1.ensure the input image is grayscale before calling 'HoughCircles'
     # 2.Add color detection logic to identify circles based on their colors.
     detected_circles = cv.HoughCircles(board_image, 
                                        cv.HOUGH_GRADIENT, 1, 20, param1 = 50,
                                        param2 = 30, minRadius = 50, maxRadius = 100)
-
-    detected_coordinates = []
-    
     if detected_circles is not None:
         # convert the circle parameters a, b, and r to integers.
         detected_circles = np.uint16(np.around(detected_circles))
@@ -115,21 +147,7 @@ def detect_circle(board_image):
         for pt in detected_circles[0, :]:
             a, b, r = pt[0], pt[1], pt[2]
             detected_coordinates.append([a, b])
-
-
-            # # Draw the circumference of the circle
-            # # syntax : 
-            # # cv2.circle(image, center_coordinates, radius, color, thickness)
-            # cv.circle(board_image, (a, b), r, (255, 0, 0), 2)
-            # # Draw a small circle (of radius 1) to show the center.
-            # cv.circle(board_image, (a, b), 1, (255, 0, 0), 3)
-            # print(a, b, r)
-            # cv.imshow("Detected Circle", board_image)
-            # cv.waitKey(0)
-            # cv.destroyAllWindows()
-
     return detected_coordinates
-
 
 def detect_text(text_image1):
     """
@@ -168,7 +186,6 @@ def detect_text(text_image1):
         cleaned_lines.append(cleaned_line)
 
     return cleaned_lines
-
 
 def map_coordinates(coordinates, color):
     """
@@ -225,42 +242,10 @@ def map_coordinates(coordinates, color):
 
     return hold_labels
 
-
-def run_detector(path=f"Resources/Photos/TESTRUN/test.PNG", grade="VTest"):
-    """
-    a function that summarize the detection process
-    return the problem's name & grade & the holds position.
-    """
-    # read image, separate into two ROI, board and text.
-    img = read_image(path)
-    if img is None:
-        print(f"Failed to load img")
-    else:
-        colored_board, colored_text = crop_img(img)
-        # red_masked, blue_masked, green_masked =  remove_background_noise(colored_board)
-        red_masked = remove_background_noise(colored_board, HSV_RED)
-        blue_masked = remove_background_noise(colored_board, HSV_BLUE)
-        green_masked = remove_background_noise(colored_board, HSV_GREEN)
-        # blur each masks
-        red_blurred = blur_image(red_masked)
-        blue_blurred = blur_image(blue_masked)
-        green_blurred = blur_image(green_masked)    
-        # detect the circle's color and its coordinate
-        detect_red = detect_circle(red_blurred)
-        detect_blue = detect_circle(blue_blurred)
-        detect_green = detect_circle(green_blurred)
-        # detect the boulder's name and its grade, return a list
-        text_image = detect_text(colored_text)
-        # map each coordinate into moonboard hold labels
-        red_labels = map_coordinates(detect_red, "red")
-        blue_labels = map_coordinates(detect_blue, "blue")
-        green_labels = map_coordinates(detect_green, "green")
-
-        print(text_image, red_labels, blue_labels, green_labels, sep="\n")
-
-        # input to database
-        data_to_database(text_image, red_labels, blue_labels, green_labels, grade)
-
+def display_image(title, image):
+    cv.imshow(title, image)
+    cv.waitKey(0)
+    cv.destroyAllWindows()
 
 def list_item_in_folder(folder_path):
     """
@@ -275,28 +260,25 @@ def list_item_in_folder(folder_path):
 
     return count
 
-
-def scan_all(grade):
-    """
-    a function to scan whole file in a directory.
-    for example, scan_all("V3") will open V3 folder,
-    scan everything inside and put it in database.
-    """
-    # define the folder's path
-    folder_path = f"Resources/Photos/{grade}"
-    # count number of files with list_item_in_folder() function
-    count = list_item_in_folder(folder_path)
-
-    # use run_detector function on all files 
-    for num in range(count):
-        file_path = folder_path + f"/{grade}_{num+1}.PNG"
-        run_detector(file_path, grade)
-
-
 if __name__ == "__main__":
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import cv2 as cv
+    import os
+    import pytesseract
+    import easyocr
+    import re
+    from database.database import data_to_database
+    from tools.hex_to_hsv import hex_to_hsv
+
+    #  色のHSV値の初期化
+    HSV_RED = hex_to_hsv("#f44336")
+    HSV_BLUE = hex_to_hsv("#2961fe")
+    HSV_GREEN = np.array([62, 139, 197])
+    HSV_YELLOW = [27, 141, 235]
+    HSV_BLACK = [120, 8, 32]
+
     scan_all("V10")
-    # call the mouse_callback function with the cropped image part
-    # mouse_callback("measurer", board_part)
 
 
 
