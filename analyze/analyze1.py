@@ -1,3 +1,5 @@
+import sys
+sys.path.append('../')
 from database.database import get_data_from_database
 import matplotlib.pyplot as plt
 import numpy as np
@@ -92,10 +94,4 @@ def create_graph(holds_dict):
 
 
 holds_dictionary = input_data_to_dictionary()
-<<<<<<< HEAD:analyze1.py
 print(holds_dictionary)
-=======
-# create_graph(holds_dictionary)
-for key in holds_dictionary:
-    print(key, holds_dictionary[key])
->>>>>>> d2821b661bf7e73603aa04191f8307435a7e0f9e:analyze/analyze1.py

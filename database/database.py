@@ -10,7 +10,7 @@ def data_to_database(problem_name, red, blue, green, grade):
     blue = ['A5', 'F12', 'D11', 'K7', 'G8', 'K12']
     green = ['J3', 'E4']
     """
-    connect_sql = sqlite3.connect('database/boards.db')
+    connect_sql = sqlite3.connect('boards.db')
     cursor = connect_sql.cursor()
     cursor.execute(f'''CREATE TABLE IF NOT EXISTS {grade}
                     (name TEXT PRIMARY KEY, grade TEXT, goal TEXT, middle TEXT, start TEXT) ''')
@@ -32,24 +32,40 @@ def data_to_database(problem_name, red, blue, green, grade):
 
 def get_data_from_database(table_name):
     """
-    a function to fetch data from table in database.
+    A function to fetch data from a table in the database.
     """
-    # open connection
-    connect_sql = sqlite3.connect('database/boards.db')
-    # open cursor
+    # Open connection
+    db_path = 'boards.db'
+    connect_sql = sqlite3.connect(db_path)
+    print(f"Connected to database: {db_path}")
+    
+    # Open cursor
     cursor = connect_sql.cursor()
-    # writing the query
-    query = f'SELECT name,goal,middle,start from {table_name}'
-    # execute query & fetch results
-    cursor.execute(query)
-    get_all = cursor.fetchall()
-    connect_sql.close()
+    
+    # Verify tables in the database
+    cursor.execute('SELECT name FROM sqlite_master WHERE type="table";')
+    tables = cursor.fetchall()
+    print(f"Tables in the database: {tables}")
+    
+    # Writing the query to fetch data from the specified table
+    query = f'SELECT name, goal, middle, start FROM {table_name}'
+    print(f"Executing query: {query}")
+    
+    try:
+        cursor.execute(query)
+        get_all = cursor.fetchall()
+    except sqlite3.OperationalError as e:
+        print(f"Error: {e}")
+        get_all = []
 
+    # Close connection
+    connect_sql.close()
+    
     return get_all
 
 def delete_database(grade):
     # connect to the database
-    connect_sql = sqlite3.connect('database/boards.db')
+    connect_sql = sqlite3.connect('boards.db')
     cursor = connect_sql.cursor()
 
     # writing the query
