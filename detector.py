@@ -147,14 +147,13 @@ def detect_text(text_image1):
 
     reader = easyocr.Reader(['en','ja'])  # Specify language(s)
     result = reader.readtext(text_image1)
-    print(result)
+    # print(result) # **for debugging purpose**
     text2 = ' '.join([item[1] for item in result])
 
-    print(text2)
+    # print(text2) # **for debugging purpose**
     config = '--oem 3 --psm 6 -c tessedit_char_blacklist=⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳㉑㉒㉓㉔㉕㉖㉗㉘㉙㉚㉛@©®©箇介人旨'
 
     text1 = pytesseract.image_to_string(text_image1, lang='jpn+eng', config=config)
-    print(text1)
     # print(text1)  # **for debugging purpose**
     first_two_lines = []
     first_two_lines.append(text1[0])
@@ -294,7 +293,9 @@ if __name__ == "__main__":
     HSV_YELLOW = [27, 141, 235]
     HSV_BLACK = [120, 8, 32]
 
-    scan_all("V10")
+    # grade = input("enter the grade you want to input: ")
+    for grade in range(4, 11):
+        scan_all(f"V{grade}")
 
 
 
