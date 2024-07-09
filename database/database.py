@@ -35,17 +35,12 @@ def get_data_from_database(table_name):
     A function to fetch data from a table in the database.
     """
     # Open connection
-    db_path = 'boards.db'
+    db_path = '../database/boards.db'
     connect_sql = sqlite3.connect(db_path)
     print(f"Connected to database: {db_path}")
     
     # Open cursor
     cursor = connect_sql.cursor()
-    
-    # Verify tables in the database
-    cursor.execute('SELECT name FROM sqlite_master WHERE type="table";')
-    tables = cursor.fetchall()
-    print(f"Tables in the database: {tables}")
     
     # Writing the query to fetch data from the specified table
     query = f'SELECT name, goal, middle, start FROM {table_name}'
