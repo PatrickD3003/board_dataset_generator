@@ -143,12 +143,18 @@ def detect_text(text_image1):
     a = detect_text(text_image)
     a = ["Three combination", "V8"]
     """
+    blacklist = "⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳㉑㉒㉓㉔㉕㉖㉗㉘㉙㉚㉛@介人"
 
-    reader = easyocr.Reader(['en'])  # Specify language(s)
+    reader = easyocr.Reader(['en','ja'])  # Specify language(s)
     result = reader.readtext(text_image1)
+    print(result)
     text2 = ' '.join([item[1] for item in result])
 
-    text1 = pytesseract.image_to_string(text_image1)
+    print(text2)
+    config = '--oem 3 --psm 6 -c tessedit_char_blacklist=⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳㉑㉒㉓㉔㉕㉖㉗㉘㉙㉚㉛@©®©箇介人旨'
+
+    text1 = pytesseract.image_to_string(text_image1, lang='jpn+eng', config=config)
+    print(text1)
     # print(text1)  # **for debugging purpose**
     first_two_lines = []
     first_two_lines.append(text1[0])
@@ -159,16 +165,27 @@ def detect_text(text_image1):
     text2 = text2.replace("Z","7")
     for i,line in enumerate(first_two_lines):
         if i ==0:
-            match = re.search(r'[a-zA-Z]+(?:\s[a-zA-Z]+)*|\d+[a-zA-Z]+|[a-zA-Z]+\d+', line)
-            cleaned_line = match.group(0) if match else ''      
+            #match = re.search(r'[a-zA-Z]+(?:\s[a-zA-Z]+)*|\d+[a-zA-Z]+|[a-zA-Z]+\d+', line)
+            #cleaned_line = match.group(0) if match else ''
+            cleaned_line = line
             
         if i == 1:
-                match = re.search(r'\b[5-9][A-Z]\+?\/V?(1[0-9]|20|[1-9])\b', text2)
-                if match:
-                    cleaned_line = match.group(0).replace('/', "/V") if 'V' not in match.group(0) else match.group(0)
-                else:
-                    cleaned_line = "None"  # Handle case where match is None
+            match = re.search(r'\b[5-9][A-Z]\+?\/?V?N?(1[0-9]|20|[1-9])\b', text2)  
+            if match:
+                cleaned_line = match.group(0)
+
+                # Apply replacement logic
+                if 'V' not in cleaned_line:
+                    cleaned_line = cleaned_line.replace('/', "/V")
+                elif "/V" not in cleaned_line:
+                    cleaned_line = cleaned_line.replace('V', "/V")
+                cleaned_line = cleaned_line.replace('N', "/V") if 'V' not in cleaned_line else cleaned_line
+
+            else:
+                cleaned_line = ''  # Handle the case where match is None
+
         cleaned_lines.append(cleaned_line)
+
 
     return cleaned_lines
 
