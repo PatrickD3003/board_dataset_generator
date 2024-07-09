@@ -32,6 +32,24 @@ label = "A2"
 "A2" appears on V5 problem 11 times, 
 """
 
+def input_data_to_dictionary():
+    # get the grade range. starts at V3 and ends at V10
+    lowest_grade = 3
+    highest_grade = 10
+    # create the dictionary of holds.
+    holds_dict = holds_dictionary_generator()
+
+    for grade in range(lowest_grade, highest_grade):
+        # analyze each grade
+        # create a hold dictionary to count its appearance frequency
+        grade = f"V{grade}"
+        appeared_holds = get_holds_list(grade)
+        for hold in appeared_holds:
+            selected_holds = holds_dict[hold]
+            selected_holds[grade] += 1
+        
+    return holds_dict
+
 def holds_dictionary_generator():
     """
     create a dictionary containing hold label as key and its quantity as value.
@@ -62,24 +80,6 @@ def get_holds_list(grade):
     all_holds = [element for hold in all_holds for element in hold]
     return all_holds
 
-def input_data_to_dictionary():
-    # get the grade range. starts at V3 and ends at V10
-    lowest_grade = 3
-    highest_grade = 10
-    # create the dictionary of holds.
-    holds_dict = holds_dictionary_generator()
-
-    for grade in range(lowest_grade, highest_grade):
-        # analyze each grade
-        # create a hold dictionary to count its appearance frequency
-        grade = f"V{grade}"
-        appeared_holds = get_holds_list(grade)
-        for hold in appeared_holds:
-            selected_holds = holds_dict[hold]
-            selected_holds[grade] += 1
-        
-    return holds_dict
-
 def create_graph(holds_dict):
     # iterate through the dictionary
     for key in holds_dict:
@@ -94,4 +94,4 @@ def create_graph(holds_dict):
 
 
 holds_dictionary = input_data_to_dictionary()
-print(holds_dictionary)
+create_graph(holds_dictionary)
